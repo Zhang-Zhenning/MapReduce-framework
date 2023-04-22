@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/rpc"
@@ -20,6 +23,88 @@ type Worker struct {
 	Shutdown_chan      chan struct{} // when this channel is closed then all the net threads should be shutdown
 }
 
+func doMap(tname string, mapidx int, num_reduces int, f string, mapf func(string, string) []KeyValue) {
+	fmt.Printf("doMap: %s - %d - %s\n", tname, mapidx, f)
+
+	// read the file
+	data, err := ioutil.ReadFile(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// call the map function
+	kvps := mapf(f, string(data))
+
+	// create nReduce files
+	var outFiles []*os.File
+
+	for i := 0; i < num_reduces; i++ {
+		name := MapResultName(tname, mapidx, i)
+		file, err := os.Create(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		outFiles = append(outFiles, file)
+	}
+
+	// write the key/value pairs to the files
+	for _, kvp := range kvps {
+		idx := ihash(kvp.Key) % num_reduces
+		enc := json.NewEncoder(outFiles[idx])
+		enc.Encode(kvp)
+	}
+
+	// close the files
+	for _, file := range outFiles {
+		file.Close()
+	}
+
+}
+
+func doReduce(tname string, redidx int, num_map int, outf string, redf func(string, []string) string) {
+
+	fmt.Printf("doReduce: %s - %d - %s\n", tname, redidx, outf)
+
+	kvsmap := make(map[string][]string)
+
+	// read all files belong to this reduce idx
+	for i := 0; i < num_map; i++ {
+		name := MapResultName(tname, i, redidx)
+		file, err := os.Open(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dec := json.NewDecoder(file)
+		for {
+			var kvp KeyValue
+			if err := dec.Decode(&kvp); err != nil {
+				break
+			}
+			// combine the key/value pairs
+			kvsmap[kvp.Key] = append(kvsmap[kvp.Key], kvp.Value)
+		}
+		file.Close()
+	}
+
+	// generate the output file
+	rfile, err := os.Create(outf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	enc := json.NewEncoder(rfile)
+
+	//fill the output file
+	for k, v := range kvsmap {
+		data := redf(k, v)
+		kvo := KeyValue{k, data}
+		enc.Encode(kvo)
+
+	}
+
+	// close the file
+	rfile.Close()
+}
+
 // ---------------------------rpc functions for Worker---------------------------
 
 // this function should be called by the Worker to start the server, should be a coroutine
@@ -37,7 +122,7 @@ func (wk *Worker) WorkerStartServer() {
 	}
 	wk.Listener = lis
 
-	debuginfo("Worker %s start server\n", wk.Worker_name)
+	fmt.Printf("Worker %s start server\n", wk.Worker_name)
 	// infinite loop to accept new connection
 	for {
 		// if it is shutdown, then break the loop
@@ -63,7 +148,7 @@ func (wk *Worker) WorkerStartServer() {
 
 // this function should be called by the Master to shutdown the Worker
 func (wk *Worker) WorkerShutdownServer(_ *struct{}, res *ShutdownWorkerReply) error {
-	debuginfo("Worker %s shutdown server\n", wk.Worker_name)
+	fmt.Printf("Worker %s shutdown server\n", wk.Worker_name)
 
 	wk.Mu.Lock()
 	res.Worker_name = wk.Worker_name
@@ -92,7 +177,7 @@ func (wk *Worker) WorkerRegisterToMaster(master_name string) {
 // this function should be called by the Master to assign a task to the Worker
 func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 
-	debuginfo("Worker %s assign task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
+	fmt.Printf("Worker %s assign task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
 
 	// update the workder info
 	wk.Mu.Lock()
@@ -118,7 +203,7 @@ func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 	wk.Num_done_tasks++
 	wk.Mu.Unlock()
 
-	debuginfo("Worker %s finish task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
+	fmt.Printf("Worker %s finish task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
 	return nil
 
 }
@@ -133,7 +218,7 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 	wk.Red_func = red_func
 	wk.Shutdown_chan = make(chan struct{})
 
-	debuginfo("Worker %s start to run\n", worker_name)
+	fmt.Printf("Worker %s start to run\n", worker_name)
 
 	// start the server
 	go wk.WorkerStartServer()
@@ -144,5 +229,5 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 	// wait for shutdown
 	<-wk.Shutdown_chan
 
-	debuginfo("Worker %s shutdown\n", worker_name)
+	fmt.Printf("Worker %s shutdown\n", worker_name)
 }

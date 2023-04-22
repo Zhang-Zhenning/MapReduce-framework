@@ -31,7 +31,7 @@ type Master struct {
 func (m *Master) RegisterWorker(args *RegisterWorkerArgs, _ *struct{}) error {
 	m.Mu.Lock()
 	defer m.Mu.Unlock()
-	debuginfo("Master %s register Worker %s\n", m.Master_name, args.Worker_name)
+	fmt.Printf("Master %s register Worker %s\n", m.Master_name, args.Worker_name)
 	m.workers = append(m.workers, args.Worker_name)
 	m.incomming_cond.Broadcast()
 	return nil
@@ -117,7 +117,7 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 	go m.MasterStartServer()
 
 	// start schedule the map and reduce task
-	fmt.Printf("%s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
+	fmt.Printf("Master %s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
 
 	time.Sleep(5 * time.Second)
 
@@ -132,14 +132,14 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 	// kill all workers
 	worker_task_gather := m.KillAllWorkers()
 	// print worker task gather
-	for _, num := range worker_task_gather {
-		fmt.Printf("%s has finished %d tasks\n", m.Master_name, num)
+	for i, num := range worker_task_gather {
+		fmt.Printf("Worker %s has finished %d tasks\n", m.workers[i], num)
 	}
 
 	// shutdown Master server
 	m.MasterShutdownServer()
 
-	fmt.Printf("%s: Map/Reduce task %s completed\n", m.Master_name, m.Task_name)
+	fmt.Printf("Master %s: Map/Reduce task %s completed\n", m.Master_name, m.Task_name)
 
 	// signal task finished
 	m.task_done_chan <- true
@@ -159,11 +159,11 @@ func (m *Master) KillAllWorkers() []int {
 
 	m.Mu.Lock()
 	for _, worker := range m.workers {
-		fmt.Printf("%s: Shutdown Worker %s\n", m.Master_name, worker)
+		fmt.Printf("Master %s: Shutdown Worker %s\n", m.Master_name, worker)
 		var reply ShutdownWorkerReply
 		ok := call(worker, "Worker.WorkerShutdownServer", new(struct{}), &reply)
 		if ok == false {
-			fmt.Printf("%s: Shutdown Worker %s error\n", m.Master_name, worker)
+			fmt.Printf("Master %s: Shutdown Worker %s error\n", m.Master_name, worker)
 		} else {
 			worker_task_gather = append(worker_task_gather, reply.Num_finished_task)
 		}
@@ -174,7 +174,7 @@ func (m *Master) KillAllWorkers() []int {
 
 // schedule the task to workers
 func (m *Master) ScheduleJob(TaskPhase taskType) {
-	fmt.Printf("%s: Schedule %s task %s\n", m.Master_name, TaskPhase, m.Task_name)
+	fmt.Printf("Master %s: Schedule %s task %s\n", m.Master_name, TaskPhase, m.Task_name)
 
 	var n_tasks int
 	var n_others int
@@ -217,6 +217,6 @@ func (m *Master) ScheduleJob(TaskPhase taskType) {
 	}
 
 	task_wait_group.Wait()
-	fmt.Printf("%s: Schedule %s task %s done\n", m.Master_name, TaskPhase, m.Task_name)
+	fmt.Printf("Master %s: Schedule %s task %s done\n", m.Master_name, TaskPhase, m.Task_name)
 
 }
