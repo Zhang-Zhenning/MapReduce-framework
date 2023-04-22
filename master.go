@@ -54,7 +54,7 @@ func (m *Master) HandleNewWorker() {
 }
 
 // this function should be called by the Master to start the Master server
-func (m *Master) MasterStartServer() {
+func (m *Master) MasterStartServer(sv chan bool) {
 	rpcs := rpc.NewServer()
 	err := rpcs.Register(m)
 	if err != nil {
@@ -69,6 +69,8 @@ func (m *Master) MasterStartServer() {
 	m.listener = lis
 
 	fmt.Printf("Master %s: start server\n", m.Master_name)
+	// tell workers they can go on
+	close(sv)
 
 	for {
 		select {
@@ -107,15 +109,16 @@ func MakeMaster(name string) *Master {
 }
 
 // this function should be called by the Master to start a job and create a Master
-func RunMaster(files []string, nReduce int, master_name string, job_name string, return_chan chan *Master) *Master {
+func RunMaster(files []string, nReduce int, master_name string, job_name string, return_chan chan *Master, sev_chan chan bool) *Master {
 	m := MakeMaster(master_name)
 	m.Files = files
 	m.nReduce = nReduce
 	m.Task_name = job_name
 	go m.HandleNewWorker()
-	go m.MasterStartServer()
+	go m.MasterStartServer(sev_chan)
 
 	// start schedule the map and reduce task
+	fmt.Printf("Master %s: start to run", m.Master_name)
 	fmt.Printf("Master %s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
 
 	//time.Sleep(5 * time.Second)

@@ -209,7 +209,7 @@ func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 }
 
 // run Worker to standby for upcomming tasks
-func RunWorker(master_name string, worker_name string, map_func func(string, string) []KeyValue, red_func func(string, []string) string) {
+func RunWorker(master_name string, worker_name string, map_func func(string, string) []KeyValue, red_func func(string, []string) string, server_chan chan bool) {
 
 	// create a new Worker
 	wk := new(Worker)
@@ -220,7 +220,9 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 
 	fmt.Printf("Worker %s: start to run\n", worker_name)
 
-	// start the server
+	// wait for the master to start its server
+	<-server_chan
+
 	go wk.WorkerStartServer()
 
 	// register the Worker to the Master

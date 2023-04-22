@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 )
 
@@ -58,17 +57,20 @@ func main() {
 	var mname string = get_socket_name("Master")
 	var wname1 string = get_socket_name("worker1")
 	var wname2 string = get_socket_name("worker2")
+	var wname3 string = get_socket_name("worker3")
 
 	var wc_files = []string{"./data/wordsa.txt", "./data/wordsb.txt", "./data/wordsc.txt"}
 
 	fmt.Println("Hello, playground")
 
 	ret_c := make(chan *Master)
+	sv_c := make(chan bool)
 
-	go RunMaster(wc_files, 2, mname, "word_count_job_test1", ret_c)
-	time.Sleep(2 * time.Second)
-	go RunWorker(mname, wname1, WcMapF, WcReduceF)
-	go RunWorker(mname, wname2, WcMapF, WcReduceF)
+	go RunMaster(wc_files, 2, mname, "word_count_job_test1", ret_c, sv_c)
+	//time.Sleep(1 * time.Second)
+	go RunWorker(mname, wname1, WcMapF, WcReduceF, sv_c)
+	go RunWorker(mname, wname2, WcMapF, WcReduceF, sv_c)
+	go RunWorker(mname, wname3, WcMapF, WcReduceF, sv_c)
 
 	// wait for the Master to finish
 	// all workers should exit before the Master does
