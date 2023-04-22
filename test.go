@@ -65,7 +65,7 @@ func main() {
 
 	ret_c := make(chan *Master)
 
-	go RunMaster(wc_files, 1, mname, "word_count_job_test1", ret_c)
+	go RunMaster(wc_files, 2, mname, "word_count_job_test1", ret_c)
 	time.Sleep(2 * time.Second)
 	go RunWorker(mname, wname1, WcMapF, WcReduceF)
 	go RunWorker(mname, wname2, WcMapF, WcReduceF)

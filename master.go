@@ -124,7 +124,10 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 	m.ScheduleJob(MapTask)
 	m.ScheduleJob(ReduceTask)
 
-	time.Sleep(10 * time.Second)
+	// combine files
+	m.CombineFiles()
+
+	time.Sleep(5 * time.Second)
 
 	// kill all workers
 	worker_task_gather := m.KillAllWorkers()

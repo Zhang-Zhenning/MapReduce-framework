@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -45,11 +46,15 @@ type TaskDetail struct {
 
 // map-reduce related
 func MapResultName(jobName string, mapTask int, reduceTask int) string {
-	return "mrtmp." + jobName + "-" + strconv.Itoa(mapTask) + "-" + strconv.Itoa(reduceTask)
+	return "./results/" + "mrtmp." + jobName + "-" + strconv.Itoa(mapTask) + "-" + strconv.Itoa(reduceTask)
 }
 
 func ReduceResultName(jobName string, reduceTask int) string {
-	return "mrtmp." + jobName + "-res-" + strconv.Itoa(reduceTask)
+	return "./results/" + "mrtmp." + jobName + "-res-" + strconv.Itoa(reduceTask)
+}
+
+func FinalResultName(jobName string) string {
+	return "./results/" + "mrtmp." + jobName + "-res"
 }
 
 func ihash(s string) int {
@@ -138,4 +143,28 @@ func doReduce(tname string, redidx int, num_map int, outf string, redf func(stri
 
 	// close the file
 	rfile.Close()
+}
+
+func (mm *Master) CombineFiles() {
+	var res_files []string
+	for i := 0; i < mm.nReduce; i++ {
+		res_files = append(res_files, ReduceResultName(mm.Task_name, i))
+	}
+	var final_file string = FinalResultName(mm.Task_name)
+	newFile, err := os.Create(final_file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range res_files {
+		temp_file, err := os.Open(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = io.Copy(newFile, temp_file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		temp_file.Close()
+	}
+	newFile.Close()
 }
