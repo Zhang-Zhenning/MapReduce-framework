@@ -92,7 +92,7 @@ func (wk *Worker) WorkerRegisterToMaster(master_name string) {
 // this function should be called by the Master to assign a task to the Worker
 func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 
-	debuginfo("Worker %s assign task %s - %s - %d\n", wk.Worker_name, task.task_name, task.task_type, task.task_index)
+	debuginfo("Worker %s assign task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
 
 	// update the workder info
 	wk.Mu.Lock()
@@ -105,11 +105,11 @@ func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 		log.Fatal("Worker %s has more than 1 task running at the same time\n", wk.Worker_name)
 	}
 
-	switch task.task_type {
+	switch task.TaskType {
 	case MapTask:
-		doMap(task.task_name, task.task_index, task.file, wk.Map_func)
+		doMap(task.TaskName, task.TaskIndex, task.NumOtherPhase, task.File, wk.Map_func)
 	case ReduceTask:
-		doReduce(task.task_name, task.task_index, task.file, wk.Red_func)
+		doReduce(task.TaskName, task.TaskIndex, task.NumOtherPhase, task.File, wk.Red_func)
 	}
 
 	// update the workder info
@@ -118,7 +118,7 @@ func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 	wk.Num_done_tasks++
 	wk.Mu.Unlock()
 
-	debuginfo("Worker %s finish task %s - %s - %d\n", wk.Worker_name, task.task_name, task.task_type, task.task_index)
+	debuginfo("Worker %s finish task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
 	return nil
 
 }

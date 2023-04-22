@@ -118,10 +118,13 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 
 	// start schedule the map and reduce task
 	fmt.Printf("%s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
-	//schedule(m.Task_name, m.Files, m.nReduce, m, mapTask)
-	//schedule(m.Task_name, m.Files, m.nReduce, m, reduceTask)
 
-	time.Sleep(14 * time.Second)
+	time.Sleep(5 * time.Second)
+
+	m.ScheduleJob(MapTask)
+	m.ScheduleJob(ReduceTask)
+
+	time.Sleep(10 * time.Second)
 
 	// kill all workers
 	worker_task_gather := m.KillAllWorkers()
@@ -164,4 +167,53 @@ func (m *Master) KillAllWorkers() []int {
 	}
 	m.Mu.Unlock()
 	return worker_task_gather
+}
+
+// schedule the task to workers
+func (m *Master) ScheduleJob(TaskPhase taskType) {
+	fmt.Printf("%s: Schedule %s task %s\n", m.Master_name, TaskPhase, m.Task_name)
+
+	var n_tasks int
+	var n_others int
+	var task_wait_group sync.WaitGroup
+
+	if TaskPhase == MapTask {
+		n_tasks = len(m.Files)
+		n_others = m.nReduce
+	} else {
+		n_tasks = m.nReduce
+		n_others = len(m.Files)
+	}
+
+	task_wait_group.Add(n_tasks)
+	for i := 0; i < n_tasks; i++ {
+		go func(sidx int) {
+			var task_args TaskDetail
+			task_args.TaskName = m.Task_name
+			task_args.TaskType = TaskPhase
+			task_args.TaskIndex = sidx
+			task_args.NumOtherPhase = n_others
+			if TaskPhase == MapTask {
+				task_args.File = m.Files[sidx]
+			} else {
+				task_args.File = ReduceResultName(task_args.TaskName, task_args.TaskIndex)
+			}
+
+			done := false
+			for !done {
+				// get a free worker from the channel, all workers in channel should be free
+				cur_worker := <-m.workers_chan
+				done = call(cur_worker, "Worker.WorkerAssignTask", &task_args, new(struct{}))
+				// the worker is available, put it back to the channel
+				go func() { m.workers_chan <- cur_worker }()
+			}
+
+			task_wait_group.Done()
+
+		}(i)
+	}
+
+	task_wait_group.Wait()
+	fmt.Printf("%s: Schedule %s task %s done\n", m.Master_name, TaskPhase, m.Task_name)
+
 }
