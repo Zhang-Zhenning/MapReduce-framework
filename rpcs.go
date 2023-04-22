@@ -11,7 +11,7 @@ import (
 // in /var/tmp. can't use current directory since
 // AFS doesn't support UNIX-domain sockets.
 func get_socket_name(suffix string) string {
-	s := "/Users/zhangzhenning/GolandProjects/MapRed/824-"
+	s := RPCServerPath + "/uid-"
 	s += strconv.Itoa(os.Getuid()) + "/"
 	os.RemoveAll(s)
 	os.Mkdir(s, 0777)

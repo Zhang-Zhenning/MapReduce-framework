@@ -24,7 +24,7 @@ type Worker struct {
 }
 
 func doMap(tname string, mapidx int, num_reduces int, f string, mapf func(string, string) []KeyValue) {
-	fmt.Printf("doMap: %s - %d - %s\n", tname, mapidx, f)
+	debuginfo("doMap: %s - %d - %s\n", tname, mapidx, f)
 
 	// read the file
 	data, err := ioutil.ReadFile(f)
@@ -63,7 +63,7 @@ func doMap(tname string, mapidx int, num_reduces int, f string, mapf func(string
 
 func doReduce(tname string, redidx int, num_map int, outf string, redf func(string, []string) string) {
 
-	fmt.Printf("doReduce: %s - %d - %s\n", tname, redidx, outf)
+	debuginfo("doReduce: %s - %d - %s\n", tname, redidx, outf)
 
 	kvsmap := make(map[string][]string)
 
@@ -122,7 +122,7 @@ func (wk *Worker) WorkerStartServer() {
 	}
 	wk.Listener = lis
 
-	fmt.Printf("Worker %s start server\n", wk.Worker_name)
+	fmt.Printf("Worker %s: start server\n", wk.Worker_name)
 	// infinite loop to accept new connection
 	for {
 		// if it is shutdown, then break the loop
@@ -148,7 +148,7 @@ func (wk *Worker) WorkerStartServer() {
 
 // this function should be called by the Master to shutdown the Worker
 func (wk *Worker) WorkerShutdownServer(_ *struct{}, res *ShutdownWorkerReply) error {
-	fmt.Printf("Worker %s shutdown server\n", wk.Worker_name)
+	fmt.Printf("Worker %s: shutdown server\n", wk.Worker_name)
 
 	wk.Mu.Lock()
 	res.Worker_name = wk.Worker_name
@@ -177,7 +177,7 @@ func (wk *Worker) WorkerRegisterToMaster(master_name string) {
 // this function should be called by the Master to assign a task to the Worker
 func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 
-	fmt.Printf("Worker %s assign task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
+	fmt.Printf("Worker %s: assigned task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
 
 	// update the workder info
 	wk.Mu.Lock()
@@ -203,7 +203,7 @@ func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 	wk.Num_done_tasks++
 	wk.Mu.Unlock()
 
-	fmt.Printf("Worker %s finish task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
+	fmt.Printf("Worker %s: finish task %s - %s - %d\n", wk.Worker_name, task.TaskName, task.TaskType, task.TaskIndex)
 	return nil
 
 }
@@ -218,7 +218,7 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 	wk.Red_func = red_func
 	wk.Shutdown_chan = make(chan struct{})
 
-	fmt.Printf("Worker %s start to run\n", worker_name)
+	fmt.Printf("Worker %s: start to run\n", worker_name)
 
 	// start the server
 	go wk.WorkerStartServer()
@@ -229,5 +229,5 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 	// wait for shutdown
 	<-wk.Shutdown_chan
 
-	fmt.Printf("Worker %s shutdown\n", worker_name)
+	fmt.Printf("Worker %s: shutdown\n", worker_name)
 }

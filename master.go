@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/rpc"
 	"sync"
-	"time"
 )
 
 type Master struct {
@@ -31,7 +30,7 @@ type Master struct {
 func (m *Master) RegisterWorker(args *RegisterWorkerArgs, _ *struct{}) error {
 	m.Mu.Lock()
 	defer m.Mu.Unlock()
-	fmt.Printf("Master %s register Worker %s\n", m.Master_name, args.Worker_name)
+	fmt.Printf("Master %s: register Worker %s\n", m.Master_name, args.Worker_name)
 	m.workers = append(m.workers, args.Worker_name)
 	m.incomming_cond.Broadcast()
 	return nil
@@ -69,7 +68,7 @@ func (m *Master) MasterStartServer() {
 	}
 	m.listener = lis
 
-	fmt.Printf("Master %s start server\n", m.Master_name)
+	fmt.Printf("Master %s: start server\n", m.Master_name)
 
 	for {
 		select {
@@ -91,7 +90,7 @@ func (m *Master) MasterStartServer() {
 }
 
 func (m *Master) MasterShutdownServer() {
-	fmt.Printf("Master %s shutdown server\n", m.Master_name)
+	fmt.Printf("Master %s: shutdown server\n", m.Master_name)
 	close(m.shutdown_chan)
 	m.listener.Close()
 }
@@ -119,7 +118,7 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 	// start schedule the map and reduce task
 	fmt.Printf("Master %s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
 
-	time.Sleep(5 * time.Second)
+	//time.Sleep(5 * time.Second)
 
 	m.ScheduleJob(MapTask)
 	m.ScheduleJob(ReduceTask)
@@ -127,13 +126,13 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 	// combine files
 	m.CombineFiles()
 
-	time.Sleep(5 * time.Second)
+	//time.Sleep(5 * time.Second)
 
 	// kill all workers
 	worker_task_gather := m.KillAllWorkers()
 	// print worker task gather
 	for i, num := range worker_task_gather {
-		fmt.Printf("Worker %s has finished %d tasks\n", m.workers[i], num)
+		fmt.Printf("Worker %s: finished %d tasks\n", m.workers[i], num)
 	}
 
 	// shutdown Master server
@@ -146,7 +145,7 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 
 	// return the Master
 	return_chan <- m
-	fmt.Printf("Master %s shutdown\n", m.Master_name)
+	fmt.Printf("Master %s: shutdown\n", m.Master_name)
 	return m
 }
 

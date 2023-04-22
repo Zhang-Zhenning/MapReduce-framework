@@ -29,9 +29,10 @@ type KeyValue struct {
 type taskType string
 
 const (
-	MapTask    taskType = "MapTask"
-	ReduceTask taskType = "ReduceTask"
-	MaxWorkers int      = 10
+	MapTask       taskType = "MapTask"
+	ReduceTask    taskType = "ReduceTask"
+	MaxWorkers    int      = 10
+	RPCServerPath string   = "/Users/zhangzhenning/GolandProjects/MapRed"
 )
 
 type TaskDetail struct {
