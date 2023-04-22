@@ -24,6 +24,7 @@ type taskType string
 const (
 	MapTask    taskType = "MapTask"
 	ReduceTask taskType = "ReduceTask"
+	MaxWorkers int      = 10
 )
 
 type TaskDetail struct {

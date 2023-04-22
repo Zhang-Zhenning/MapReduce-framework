@@ -23,7 +23,7 @@ type Worker struct {
 // ---------------------------rpc functions for Worker---------------------------
 
 // this function should be called by the Worker to start the server, should be a coroutine
-func (wk *Worker) Worker_start_server() {
+func (wk *Worker) WorkerStartServer() {
 
 	// setup rpc server
 	rpcs := rpc.NewServer()
@@ -62,7 +62,7 @@ func (wk *Worker) Worker_start_server() {
 }
 
 // this function should be called by the Master to shutdown the Worker
-func (wk *Worker) Worker_shutdown_server(_ *struct{}, res *ShutdownWorkerReply) error {
+func (wk *Worker) WorkerShutdownServer(_ *struct{}, res *ShutdownWorkerReply) error {
 	debuginfo("Worker %s shutdown server\n", wk.Worker_name)
 
 	wk.Mu.Lock()
@@ -78,7 +78,7 @@ func (wk *Worker) Worker_shutdown_server(_ *struct{}, res *ShutdownWorkerReply) 
 }
 
 // this function should be called by the Worker to register the Worker to the Master
-func (wk *Worker) worker_register(master_name string) {
+func (wk *Worker) WorkerRegisterToMaster(master_name string) {
 	// register the Worker to the Master
 	args := new(RegisterWorkerArgs)
 	args.Worker_name = wk.Worker_name
@@ -90,7 +90,7 @@ func (wk *Worker) worker_register(master_name string) {
 }
 
 // this function should be called by the Master to assign a task to the Worker
-func (wk *Worker) Worker_assign_task(task *TaskDetail, _ *struct{}) error {
+func (wk *Worker) WorkerAssignTask(task *TaskDetail, _ *struct{}) error {
 
 	debuginfo("Worker %s assign task %s - %s - %d\n", wk.Worker_name, task.task_name, task.task_type, task.task_index)
 
@@ -136,10 +136,10 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 	debuginfo("Worker %s start to run\n", worker_name)
 
 	// start the server
-	go wk.Worker_start_server()
+	go wk.WorkerStartServer()
 
 	// register the Worker to the Master
-	wk.worker_register(master_name)
+	wk.WorkerRegisterToMaster(master_name)
 
 	// wait for shutdown
 	<-wk.Shutdown_chan
