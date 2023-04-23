@@ -108,7 +108,7 @@ func doReduce(tname string, redidx int, num_map int, outf string, redf func(stri
 // ---------------------------rpc functions for Worker---------------------------
 
 // this function should be called by the Worker to start the server, should be a coroutine
-func (wk *Worker) WorkerStartServer() {
+func (wk *Worker) WorkerStartServer(mname string) {
 
 	// setup rpc server
 	rpcs := rpc.NewServer()
@@ -123,6 +123,8 @@ func (wk *Worker) WorkerStartServer() {
 	wk.Listener = lis
 
 	fmt.Printf("Worker %s: start server\n", wk.Worker_name)
+	wk.WorkerRegisterToMaster(mname)
+
 	// infinite loop to accept new connection
 	for {
 		// if it is shutdown, then break the loop
@@ -223,10 +225,7 @@ func RunWorker(master_name string, worker_name string, map_func func(string, str
 	// wait for the master to start its server
 	<-server_chan
 
-	go wk.WorkerStartServer()
-
-	// register the Worker to the Master
-	wk.WorkerRegisterToMaster(master_name)
+	go wk.WorkerStartServer(master_name) // remember, we need to start the server before register to the master!!!
 
 	// wait for shutdown
 	<-wk.Shutdown_chan
