@@ -2,49 +2,33 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 	"strconv"
 )
 
-type TEST struct{}
-
-func (t *TEST) HelloWorld(args *string, reply *string) error {
-	*reply = "Hello, " + *args
-	return nil
-}
-
 func main() {
 
 	// clean up the socket files
-	s := RPCServerPath + "/uid-"
-	s += strconv.Itoa(os.Getuid()) + "/"
-	os.RemoveAll(s)
-	os.Mkdir(s, 0777)
-
-	// master name
-	var mname string = get_socket_name("Master")
+	s := SetupUnixSocketFolder()
 
 	// get all input files
-	var wc_files []string
-	wc_files = FindFiles("./data")
+	wc_files := FindFiles(DataFolder)
 
 	// start running
 	fmt.Println("Hello, playground")
 
-	ret_c := make(chan *Master)
-	sv_c := make(chan bool)
+	ret_c := make(chan *Master) // mark the end of the Master, the main thread can exit after this
+	sv_c := make(chan bool)     // mark the end of master setting up servers, workers can start register after this
 
-	go RunMaster(wc_files, NumReduceT, mname, "word_count_job_test", ret_c, sv_c)
+	go RunMaster(wc_files, NumReduceT, get_socket_name("Master"), TheJobName, ret_c, sv_c)
 
 	for i := 0; i < runtime.NumCPU(); i++ {
-		var cur_name string = get_socket_name("Worker" + strconv.Itoa(i+1))
-		go RunWorker(mname, cur_name, WcMapF, WcReduceF, sv_c)
+		go RunWorker(get_socket_name("Master"), get_socket_name("Worker"+strconv.Itoa(i+1)), WcMapF, WcReduceF, sv_c)
 	}
 
-	// wait for the Master to finish
-	// all workers should exit before the Master does
+	// wait for the Master to finish, all workers should exit before the Master does
 	<-ret_c
-	os.RemoveAll(s)
 
+	// clean up the socket files
+	CleanupUnixSocketFolder(s)
 }

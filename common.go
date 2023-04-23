@@ -33,8 +33,10 @@ const (
 	MapTask       taskType = "MapTask"
 	ReduceTask    taskType = "ReduceTask"
 	MaxWorkers    int      = 10
-	RPCServerPath string   = "/Users/zhangzhenning/GolandProjects/MapRed"
+	RPCServerPath string   = "."
 	NumReduceT    int      = 2
+	DataFolder    string   = "./data"
+	TheJobName    string   = "word_count"
 )
 
 type TaskDetail struct {
@@ -114,4 +116,18 @@ func FindFiles(dir string) []string {
 
 	return filePaths
 
+}
+
+// create folder for unix socket files
+func SetupUnixSocketFolder() string {
+	s := RPCServerPath + "/uid-"
+	s += strconv.Itoa(os.Getuid()) + "/"
+	os.RemoveAll(s)
+	os.Mkdir(s, 0777)
+	return s
+}
+
+// clean up the unix socket folder
+func CleanupUnixSocketFolder(ss string) {
+	os.RemoveAll(ss)
 }
