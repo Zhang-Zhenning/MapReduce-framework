@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"os"
 	"sync"
 )
 
@@ -57,6 +58,7 @@ func (m *Master) HandleNewWorker() {
 func (m *Master) MasterStartServer(sv chan bool) {
 	rpcs := rpc.NewServer()
 	err := rpcs.Register(m)
+	os.Remove(m.Master_name)
 	if err != nil {
 		log.Fatal("RunMaster: Register error: ", err)
 		return
@@ -118,7 +120,7 @@ func RunMaster(files []string, nReduce int, master_name string, job_name string,
 	go m.MasterStartServer(sev_chan)
 
 	// start schedule the map and reduce task
-	fmt.Printf("Master %s: start to run", m.Master_name)
+	fmt.Printf("Master %s: start to run\n", m.Master_name)
 	fmt.Printf("Master %s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
 
 	//time.Sleep(5 * time.Second)

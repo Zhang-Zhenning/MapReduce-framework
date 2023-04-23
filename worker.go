@@ -113,7 +113,7 @@ func (wk *Worker) WorkerStartServer() {
 	// setup rpc server
 	rpcs := rpc.NewServer()
 	rpcs.Register(wk)
-	//os.Remove(wk.Worker_name)
+	os.Remove(wk.Worker_name)
 
 	// setup net Listener
 	lis, er := net.Listen("unix", wk.Worker_name)

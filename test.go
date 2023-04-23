@@ -58,8 +58,10 @@ func main() {
 	var wname1 string = get_socket_name("worker1")
 	var wname2 string = get_socket_name("worker2")
 	var wname3 string = get_socket_name("worker3")
+	var wname4 string = get_socket_name("worker4")
+	var wname5 string = get_socket_name("worker5")
 
-	var wc_files = []string{"./data/wordsa.txt", "./data/wordsb.txt", "./data/wordsc.txt"}
+	var wc_files = []string{"./data/words1.txt", "./data/words2.txt", "./data/words3.txt", "./data/words4.txt", "./data/words5.txt", "./data/words6.txt", "./data/words7.txt", "./data/words8.txt", "./data/words9.txt", "./data/words10.txt"}
 
 	fmt.Println("Hello, playground")
 
@@ -71,6 +73,8 @@ func main() {
 	go RunWorker(mname, wname1, WcMapF, WcReduceF, sv_c)
 	go RunWorker(mname, wname2, WcMapF, WcReduceF, sv_c)
 	go RunWorker(mname, wname3, WcMapF, WcReduceF, sv_c)
+	go RunWorker(mname, wname4, WcMapF, WcReduceF, sv_c)
+	go RunWorker(mname, wname5, WcMapF, WcReduceF, sv_c)
 
 	// wait for the Master to finish
 	// all workers should exit before the Master does
