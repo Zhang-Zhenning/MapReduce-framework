@@ -93,6 +93,7 @@ func (m *Master) MasterStartServer(sv chan bool) {
 	}
 }
 
+// this function should be called by the Master to shutdown the Master server
 func (m *Master) MasterShutdownServer() {
 	fmt.Printf("Master %s: shutdown server\n", m.Master_name)
 	close(m.shutdown_chan)
@@ -110,54 +111,7 @@ func MakeMaster(name string) *Master {
 	return m
 }
 
-// this function should be called by the Master to start a job and create a Master
-func RunMaster(files []string, nReduce int, master_name string, job_name string, return_chan chan *Master, sev_chan chan bool) *Master {
-	m := MakeMaster(master_name)
-	m.Files = files
-	m.nReduce = nReduce
-	m.Task_name = job_name
-	go m.HandleNewWorker()
-	go m.MasterStartServer(sev_chan)
-
-	// start schedule the map and reduce task
-	fmt.Printf("Master %s: start to run\n", m.Master_name)
-	fmt.Printf("Master %s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
-
-	//time.Sleep(5 * time.Second)
-
-	m.ScheduleJob(MapTask)
-	m.ScheduleJob(ReduceTask)
-
-	// combine files
-	m.CombineFiles()
-
-	//time.Sleep(5 * time.Second)
-
-	// kill all workers
-	worker_task_gather := m.KillAllWorkers()
-	// print worker task gather
-	for i, num := range worker_task_gather {
-		fmt.Printf("Worker %s: finished %d tasks\n", m.workers[i], num)
-	}
-
-	// shutdown Master server
-	m.MasterShutdownServer()
-
-	fmt.Printf("Master %s: Map/Reduce task %s completed\n", m.Master_name, m.Task_name)
-
-	// signal task finished
-	m.task_done_chan <- true
-
-	// return the Master
-	return_chan <- m
-	fmt.Printf("Master %s: shutdown\n", m.Master_name)
-	return m
-}
-
-func (m *Master) WaitMaster() {
-	<-m.task_done_chan
-}
-
+// kill all workers when master is about to shutdown
 func (m *Master) KillAllWorkers() []int {
 	worker_task_gather := make([]int, 0, len(m.workers))
 
@@ -223,4 +177,48 @@ func (m *Master) ScheduleJob(TaskPhase taskType) {
 	task_wait_group.Wait()
 	fmt.Printf("Master %s: Schedule %s task %s done\n", m.Master_name, TaskPhase, m.Task_name)
 
+}
+
+// this function should be called by the Master to start a job and create a Master
+func RunMaster(files []string, nReduce int, master_name string, job_name string, return_chan chan *Master, sev_chan chan bool) *Master {
+	m := MakeMaster(master_name)
+	m.Files = files
+	m.nReduce = nReduce
+	m.Task_name = job_name
+	go m.HandleNewWorker()
+	go m.MasterStartServer(sev_chan)
+
+	// start schedule the map and reduce task
+	fmt.Printf("Master %s: start to run\n", m.Master_name)
+	fmt.Printf("Master %s: Starting Map/Reduce task %s\n", m.Master_name, m.Task_name)
+
+	//time.Sleep(5 * time.Second)
+
+	m.ScheduleJob(MapTask)
+	m.ScheduleJob(ReduceTask)
+
+	// combine files
+	m.CombineFiles()
+
+	//time.Sleep(5 * time.Second)
+
+	// kill all workers
+	worker_task_gather := m.KillAllWorkers()
+	// print worker task gather
+	for i, num := range worker_task_gather {
+		fmt.Printf("Worker %s: finished %d tasks\n", m.workers[i], num)
+	}
+
+	// shutdown Master server
+	m.MasterShutdownServer()
+
+	fmt.Printf("Master %s: Map/Reduce task %s completed\n", m.Master_name, m.Task_name)
+
+	// signal task finished
+	m.task_done_chan <- true
+
+	// return the Master
+	return_chan <- m
+	fmt.Printf("Master %s: shutdown\n", m.Master_name)
+	return m
 }

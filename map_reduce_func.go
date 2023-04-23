@@ -6,6 +6,7 @@ import (
 	"unicode"
 )
 
+// self-defined map function, can change depending on the task
 func WcMapF(filename string, contents string) []KeyValue {
 	wordsKv := make(map[string]int)
 
@@ -31,6 +32,7 @@ func WcMapF(filename string, contents string) []KeyValue {
 	return rst
 }
 
+// self-defined reduce function, can change depending on the task
 func WcReduceF(key string, values []string) string {
 	cnt := 0
 	for _, value := range values {

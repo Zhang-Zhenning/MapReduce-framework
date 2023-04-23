@@ -47,7 +47,7 @@ type TaskDetail struct {
 	TaskType      taskType
 }
 
-// map-reduce related
+// name the filenames for map and reduce results
 func MapResultName(jobName string, mapTask int, reduceTask int) string {
 	return "./results/" + "mrtmp." + jobName + "-" + strconv.Itoa(mapTask) + "-" + strconv.Itoa(reduceTask)
 }

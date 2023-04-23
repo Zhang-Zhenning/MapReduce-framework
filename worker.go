@@ -23,6 +23,7 @@ type Worker struct {
 	Shutdown_chan      chan struct{} // when this channel is closed then all the net threads should be shutdown
 }
 
+// an interface to run the assigned map task from master
 func doMap(tname string, mapidx int, num_reduces int, f string, mapf func(string, string) []KeyValue) {
 	debuginfo("doMap: %s - %d - %s\n", tname, mapidx, f)
 
@@ -61,6 +62,7 @@ func doMap(tname string, mapidx int, num_reduces int, f string, mapf func(string
 
 }
 
+// an interface to run the assigned reduce task from master
 func doReduce(tname string, redidx int, num_map int, outf string, redf func(string, []string) string) {
 
 	debuginfo("doReduce: %s - %d - %s\n", tname, redidx, outf)
@@ -104,8 +106,6 @@ func doReduce(tname string, redidx int, num_map int, outf string, redf func(stri
 	// close the file
 	rfile.Close()
 }
-
-// ---------------------------rpc functions for Worker---------------------------
 
 // this function should be called by the Worker to start the server, should be a coroutine
 func (wk *Worker) WorkerStartServer(mname string) {
