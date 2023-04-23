@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -33,6 +34,7 @@ const (
 	ReduceTask    taskType = "ReduceTask"
 	MaxWorkers    int      = 10
 	RPCServerPath string   = "/Users/zhangzhenning/GolandProjects/MapRed"
+	NumReduceT    int      = 2
 )
 
 type TaskDetail struct {
@@ -63,6 +65,7 @@ func ihash(s string) int {
 	return int(h.Sum32() & 0x7fffffff)
 }
 
+// combine all the reduce result files into one file
 func (mm *Master) CombineFiles() {
 	var res_files []string
 	for i := 0; i < mm.nReduce; i++ {
@@ -85,4 +88,30 @@ func (mm *Master) CombineFiles() {
 		temp_file.Close()
 	}
 	newFile.Close()
+}
+
+// find all input files under the data directory
+func FindFiles(dir string) []string {
+	var filePaths []string
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Fatal("Error accessing path %q: %v\n", path, err)
+			return err
+		}
+
+		// Skip directories, only collect file paths
+		if !info.IsDir() {
+			filePaths = append(filePaths, path)
+		}
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("Error walking the directory: %v\n", err)
+		return nil
+	}
+
+	return filePaths
+
 }

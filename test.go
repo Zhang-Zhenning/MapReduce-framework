@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -54,27 +56,31 @@ func WcReduceF(key string, values []string) string {
 
 func main() {
 
+	// clean up the socket files
+	s := RPCServerPath + "/uid-"
+	s += strconv.Itoa(os.Getuid()) + "/"
+	os.RemoveAll(s)
+	os.Mkdir(s, 0777)
+
+	// master name
 	var mname string = get_socket_name("Master")
-	var wname1 string = get_socket_name("worker1")
-	var wname2 string = get_socket_name("worker2")
-	var wname3 string = get_socket_name("worker3")
-	var wname4 string = get_socket_name("worker4")
-	var wname5 string = get_socket_name("worker5")
 
-	var wc_files = []string{"./data/words1.txt", "./data/words2.txt", "./data/words3.txt", "./data/words4.txt", "./data/words5.txt", "./data/words6.txt", "./data/words7.txt", "./data/words8.txt", "./data/words9.txt", "./data/words10.txt"}
+	// get all input files
+	var wc_files []string
+	wc_files = FindFiles("./data")
 
+	// start running
 	fmt.Println("Hello, playground")
 
 	ret_c := make(chan *Master)
 	sv_c := make(chan bool)
 
-	go RunMaster(wc_files, 2, mname, "word_count_job_test1", ret_c, sv_c)
-	//time.Sleep(1 * time.Second)
-	go RunWorker(mname, wname1, WcMapF, WcReduceF, sv_c)
-	go RunWorker(mname, wname2, WcMapF, WcReduceF, sv_c)
-	go RunWorker(mname, wname3, WcMapF, WcReduceF, sv_c)
-	go RunWorker(mname, wname4, WcMapF, WcReduceF, sv_c)
-	go RunWorker(mname, wname5, WcMapF, WcReduceF, sv_c)
+	go RunMaster(wc_files, NumReduceT, mname, "word_count_job_test", ret_c, sv_c)
+
+	for i := 0; i < runtime.NumCPU(); i++ {
+		var cur_name string = get_socket_name("Worker" + strconv.Itoa(i+1))
+		go RunWorker(mname, cur_name, WcMapF, WcReduceF, sv_c)
+	}
 
 	// wait for the Master to finish
 	// all workers should exit before the Master does

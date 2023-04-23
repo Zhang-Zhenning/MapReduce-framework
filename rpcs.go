@@ -13,8 +13,6 @@ import (
 func get_socket_name(suffix string) string {
 	s := RPCServerPath + "/uid-"
 	s += strconv.Itoa(os.Getuid()) + "/"
-	os.RemoveAll(s)
-	os.Mkdir(s, 0777)
 	s += "mr"
 	s += strconv.Itoa(os.Getpid()) + "-"
 	s += suffix
